@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Folio</title>
+
+  <!-- Source Sans Pro — Overleaf's font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- CodeMirror 5 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/mode/stex/stex.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/edit/matchbrackets.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.17/addon/edit/closebrackets.min.js"></script>
+
+  <style>
+    :root {
+      --green:        #468847;
+      --green-hover:  #3a7040;
+      --green-light:  #5aac5a;
+      --bg-topbar:    #2c2c2c;
+      --bg-app:       #1a1a1a;
+      --bg-editor:    #282a36;   /* dracula background */
+      --bg-preview:   #252526;
+      --bg-log:       #1e1e1e;
+      --bg-modal:     #2c2c2c;
+      --border:       #3a3a3a;
+      --text:         #e8e8e8;
+      --text-muted:   #999;
+      --text-dim:     #666;
+      --font:         'Source Sans 3', 'Source Sans Pro', sans-serif;
+      --topbar-h:     52px;
+      --log-h:        180px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-app);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      overflow: hidden;
+    }
+
+    /* ── TOP BAR ─────────────────────────────────────────── */
+    #topbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: var(--topbar-h);
+      padding: 0 16px;
+      background: var(--bg-topbar);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .app-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .app-logo svg {
+      width: 26px;
+      height: 26px;
+      fill: var(--green-light);
+    }
+
+    .app-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+
+    .topbar-divider {
+      width: 1px;
+      height: 28px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    .folder-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #output-dir {
+      flex: 1;
+      min-width: 180px;
+      max-width: 480px;
+      padding: 6px 10px;
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #output-dir:focus { border-color: var(--green); }
+    #output-dir::placeholder { color: var(--text-dim); }
+
+
+    .spacer { flex: 1; }
+
+    #run-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 20px;
+      background: var(--green);
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #run-btn:hover:not(:disabled) { background: var(--green-hover); }
+    #run-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    #run-btn svg {
+      width: 14px;
+      height: 14px;
+      fill: #fff;
+      flex-shrink: 0;
+    }
+
+    #download-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 18px;
+      background: transparent;
+      color: var(--green-light);
+      border: 1.5px solid var(--green);
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, opacity 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #download-btn:hover:not(.disabled) { background: rgba(90,172,90,0.12); }
+    #download-btn.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    #download-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+
+    /* ── MAIN SPLIT ──────────────────────────────────────── */
+    #main {
+      display: flex;
+      height: calc(100vh - var(--topbar-h));
+      overflow: hidden;
+    }
+
+    /* ── EDITOR PANE ─────────────────────────────────────── */
+    #editor-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      padding: 6px 12px;
+      background: #252526;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+
+    .pane-header span { flex: 1; }
+
+    .pane-hint {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-dim);
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    /* CodeMirror fills its pane */
+    .CodeMirror {
+      flex: 1;
+      height: 100%;
+      font-size: 14px;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      line-height: 1.6;
+    }
+
+    #editor-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── PREVIEW PANE ────────────────────────────────────── */
+    #preview-pane {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #pdf-wrapper {
+      flex: 1;
+      background: #3a3a3a;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #pdf-frame {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    #pdf-placeholder {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      gap: 10px;
+      user-select: none;
+    }
+
+    #pdf-placeholder svg {
+      width: 48px;
+      height: 48px;
+      fill: var(--text-dim);
+      opacity: 0.4;
+    }
+
+    #pdf-placeholder p {
+      font-size: 14px;
+      opacity: 0.6;
+    }
+
+    /* ── LOG PANE ────────────────────────────────────────── */
+    #log-pane {
+      height: var(--log-h);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-top: 1px solid var(--border);
+      background: var(--bg-log);
+      overflow: hidden;
+    }
+
+    #log-output {
+      flex: 1;
+      padding: 8px 12px;
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-all;
+      overflow-y: auto;
+      color: var(--text-muted);
+    }
+
+    #log-output.success { color: #7ec87e; }
+    #log-output.error   { color: #e06c75; }
+
+    /* ── MODAL ───────────────────────────────────────────── */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    #modal-box {
+      background: var(--bg-modal);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 32px;
+      width: 420px;
+      max-width: 90vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    #modal-box h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      color: #fff;
+    }
+
+    #modal-box label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    #filename-input {
+      width: 100%;
+      padding: 9px 12px;
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 20px;
+    }
+    #filename-input:focus { border-color: var(--green); }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      padding: 8px 18px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: var(--font);
+      font-size: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-cancel:hover { border-color: #888; color: var(--text); }
+
+    .btn-compile {
+      padding: 8px 22px;
+      background: var(--green);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-compile:hover { background: var(--green-hover); }
+
+    /* ── SPINNER ANIMATION ───────────────────────────────── */
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── SCROLLBAR STYLE ─────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #555; }
+  </style>
+</head>
+<body>
+
+<!-- ── TOP BAR ───────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="app-logo">
+    <!-- Simple document icon -->
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+    </svg>
+    <span class="app-title">Folio</span>
+  </div>
+
+  <div class="topbar-divider"></div>
+
+  <span class="folder-label">Output folder:</span>
+  <input
+    type="text"
+    id="output-dir"
+    placeholder="e.g. C:\Users\you\Documents\PDFs"
+    title="PDFs will be saved here"
+  >
+
+  <div class="spacer"></div>
+
+  <button id="run-btn" title="Compile and preview (Ctrl+Enter)">
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 2l11 6-11 6V2z"/>
+    </svg>
+    Preview
+  </button>
+
+  <button id="download-btn" class="disabled" title="Save PDF to output folder">
+    <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8 1v8.586L5.707 7.293 4.293 8.707 8 12.414l3.707-3.707-1.414-1.414L8 9.586V1H8zM2 14h12v1H2z"/>
+    </svg>
+    Download
+  </button>
+</div>
+
+<!-- ── MAIN SPLIT ─────────────────────────────────────────── -->
+<div id="main">
+
+  <!-- Editor pane -->
+  <div id="editor-pane">
+    <div class="pane-header">
+      <span>LaTeX Source</span>
+      <span class="pane-hint">Ctrl+Enter to compile</span>
+    </div>
+    <div id="editor-wrapper">
+      <textarea id="code-area"></textarea>
+    </div>
+  </div>
+
+  <!-- Preview pane -->
+  <div id="preview-pane">
+    <div class="pane-header">
+      <span>PDF Preview</span>
+    </div>
+
+    <div id="pdf-wrapper">
+      <!-- Placeholder shown before first compile -->
+      <div id="pdf-placeholder">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H8a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm-8.5 7.5a2.5 2.5 0 0 1 0 5A2.5 2.5 0 0 1 11.5 9.5zm5.5 8l-2.5-2.5-2 2-2-2.5L8 17h11l-2-1.5zM4 6H2v14a2 2 0 0 0 2 2h14v-2H4V6z"/>
+        </svg>
+        <p>Press Preview to generate your PDF</p>
+      </div>
+      <iframe id="pdf-frame" style="display:none;" allow="fullscreen"></iframe>
+    </div>
+
+    <!-- Log pane -->
+    <div id="log-pane">
+      <div class="pane-header">
+        <span>Compilation Log</span>
+      </div>
+      <pre id="log-output">Waiting for compilation...</pre>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── FILENAME MODAL ─────────────────────────────────────── -->
+<div id="modal-overlay">
+  <div id="modal-box">
+    <h2>Download PDF</h2>
+    <label for="filename-input">Filename <span style="color:var(--text-dim)">(without .pdf)</span></label>
+    <input
+      type="text"
+      id="filename-input"
+      placeholder="my_document"
+      autocomplete="off"
+      spellcheck="false"
+    >
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modal-cancel">Cancel</button>
+      <button class="btn-compile" id="modal-compile">Compile &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── STARTER LATEX ──────────────────────────────────────────
+  const STARTER = `\\documentclass[12pt]{article}
+\\usepackage[utf8]{inputenc}
+\\usepackage[T1]{fontenc}
+\\usepackage{amsmath, amssymb}
+\\usepackage{geometry}
+\\geometry{margin=1in}
+
+\\title{My Document}
+\\author{Author Name}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{Introduction}
+Hello, \\LaTeX! This is a sample document.
+
+\\section{Mathematics}
+Here is the famous Euler identity:
+\\[
+  e^{i\\pi} + 1 = 0
+\\]
+
+\\end{document}`;
+
+  // ── CODEMIRROR SETUP ───────────────────────────────────────
+  const editor = CodeMirror.fromTextArea(document.getElementById('code-area'), {
+    mode: 'stex',
+    theme: 'dracula',
+    lineNumbers: true,
+    lineWrapping: true,
+    autofocus: true,
+    indentWithTabs: false,
+    tabSize: 2,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    extraKeys: {
+      'Ctrl-Enter': () => openModal(),
+      'Cmd-Enter':  () => openModal(),
+    }
+  });
+
+  // Make CodeMirror fill its wrapper
+  const wrapper = editor.getWrapperElement();
+  wrapper.style.height = '100%';
+  wrapper.style.flex = '1';
+  document.getElementById('editor-wrapper').style.display = 'flex';
+  document.getElementById('editor-wrapper').style.flexDirection = 'column';
+  editor.refresh();
+
+  editor.setValue(STARTER);
+
+  // ── LOCALSTORAGE FOR OUTPUT DIR ────────────────────────────
+  const LS_KEY = 'latex_compiler_output_dir';
+  const dirInput = document.getElementById('output-dir');
+
+  dirInput.value = localStorage.getItem(LS_KEY) || '';
+  dirInput.addEventListener('change', () => {
+    localStorage.setItem(LS_KEY, dirInput.value.trim());
+  });
+  dirInput.addEventListener('input', () => {
+    localStorage.setItem(LS_KEY, dirInput.value.trim());
+  });
+
+  // ── MODAL LOGIC ────────────────────────────────────────────
+  const overlay       = document.getElementById('modal-overlay');
+  const filenameInput = document.getElementById('filename-input');
+  const modalCancel   = document.getElementById('modal-cancel');
+  const modalCompile  = document.getElementById('modal-compile');
+
+  function openDownloadModal() {
+    const outputDir = dirInput.value.trim();
+    if (!outputDir) {
+      dirInput.focus();
+      dirInput.style.borderColor = '#e06c75';
+      setTimeout(() => { dirInput.style.borderColor = ''; }, 1500);
+      return;
+    }
+    overlay.classList.add('visible');
+    requestAnimationFrame(() => {
+      filenameInput.focus();
+      filenameInput.select();
+    });
+  }
+
+  function closeModal() {
+    overlay.classList.remove('visible');
+  }
+
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  modalCancel.addEventListener('click', closeModal);
+  filenameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); startDownload(); }
+    if (e.key === 'Escape') { closeModal(); }
+  });
+  modalCompile.addEventListener('click', startDownload);
+
+  // Preview button — compile only, no saving
+  document.getElementById('run-btn').addEventListener('click', startPreview);
+  // Download button — compile + save to output folder
+  document.getElementById('download-btn').addEventListener('click', openDownloadModal);
+
+  // ── COMPILE ────────────────────────────────────────────────
+  let hasPreview = false;
+
+  async function startPreview() {
+    const code     = editor.getValue();
+    const compiler = 'xelatex';
+
+    setCompiling(true);
+    updateLog('Compiling...', null);
+
+    try {
+      const res  = await fetch('/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // No output_dir — preview only, nothing saved to disk
+        body: JSON.stringify({ code, filename: 'preview', compiler }),
+      });
+      const data = await res.json();
+
+      updateLog(data.log, data.success);
+
+      if (data.success && data.pdf_url) {
+        showPdf(data.pdf_url);
+        hasPreview = true;
+        document.getElementById('download-btn').classList.remove('disabled');
+      }
+    } catch (err) {
+      updateLog(`Network error: ${err.message}`, false);
+    } finally {
+      setCompiling(false);
+    }
+  }
+
+  async function startDownload() {
+    const code      = editor.getValue();
+    const filename  = filenameInput.value.trim() || 'output';
+    const outputDir = dirInput.value.trim();
+    const compiler  = document.getElementById('compiler-select').value;
+
+    closeModal();
+    setCompiling(true);
+    updateLog('Compiling and saving...', null);
+
+    try {
+      const res  = await fetch('/compile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, filename, output_dir: outputDir, compiler }),
+      });
+      const data = await res.json();
+
+      updateLog(data.log, data.success);
+
+      if (data.success && data.pdf_url) {
+        showPdf(data.pdf_url);
+        hasPreview = true;
+        document.getElementById('download-btn').classList.remove('disabled');
+      }
+    } catch (err) {
+      updateLog(`Network error: ${err.message}`, false);
+    } finally {
+      setCompiling(false);
+    }
+  }
+
+  // ── UI HELPERS ─────────────────────────────────────────────
+
+  function setCompiling(active) {
+    const btn = document.getElementById('run-btn');
+    btn.disabled = active;
+    if (active) {
+      btn.innerHTML = '<span class="spinner"></span> Compiling...';
+    } else {
+      btn.innerHTML = `
+        <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" style="width:14px;height:14px;fill:#fff;flex-shrink:0;">
+          <path d="M3 2l11 6-11 6V2z"/>
+        </svg>
+        Preview`;
+    }
+  }
+
+  function updateLog(text, success) {
+    const pre = document.getElementById('log-output');
+    pre.textContent = text || '';
+    pre.className = success === true ? 'success' : success === false ? 'error' : '';
+    pre.scrollTop = pre.scrollHeight;
+  }
+
+  function showPdf(url) {
+    const placeholder = document.getElementById('pdf-placeholder');
+    const frame = document.getElementById('pdf-frame');
+    // Cache-bust so browser reloads the PDF
+    frame.src = url + '?t=' + Date.now();
+    placeholder.style.display = 'none';
+    frame.style.display = 'block';
+  }
+</script>
+</body>
+</html>

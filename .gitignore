@@ -1,0 +1,6 @@
+compiled_pdfs/
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.pdf

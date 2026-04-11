@@ -130,3 +130,9 @@ folio/
 ## License
 
 MIT
+
+---
+
+## Contributors
+
+- [sankalpkulk06](https://github.com/sankalpkulk06)

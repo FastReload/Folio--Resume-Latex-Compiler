@@ -40,7 +40,11 @@ That's the whole flow. One window, no projects, no waiting.
 │  \usepackage{sourcesanspro}    │      live, in the browser           │
 │  ...                           │                                     │
 │  Paste your resume LaTeX       ├─────────────────────────────────────┤
-│  Tweak a bullet point          │ ✓ Compiled successfully             |
+<<<<<<< HEAD
+│  Tweak a bullet point          │  ✓ Compiled successfully            │
+=======
+│  Tweak a bullet point          │  ✓ Compiled successfully            │
+>>>>>>> 3e474c0 (Add AI resume generation and repo setup hardening)
 │  Preview -> Download -> done   │                                     │
 │                                │                                     │
 └────────────────────────────────┴─────────────────────────────────────┘
@@ -54,6 +58,8 @@ That's the whole flow. One window, no projects, no waiting.
 - **Named downloads**: filename prompt on every download so `Resume_Netflix.pdf` and `Resume_Stripe.pdf` go exactly where you want them, named correctly
 - **XeLaTeX engine**: handles modern fonts (Source Sans Pro, FontAwesome5, custom typefaces) that pdfLaTeX chokes on
 - **pdfLaTeX template support**: most resume templates on GitHub are built for pdfLaTeX; Folio automatically patches out the incompatible primitives so they compile without touching your source
+- **AI resume generation**: paste a job description and generate tailored LaTeX from your saved resume context
+- **Multi-provider AI support**: works with OpenAI, Anthropic, and Gemini through the settings panel
 - **Overleaf-style UI**: Source Sans Pro font, dark editor, same green, familiar feel
 - **LaTeX syntax highlighting**: CodeMirror with full LaTeX mode so your source is readable
 - **Remembers your folder**: set your output folder once, it sticks across sessions
@@ -74,13 +80,22 @@ That's the whole flow. One window, no projects, no waiting.
 ```bash
 git clone https://github.com/yourusername/folio.git
 cd folio
+copy .env.example .env
 pip install -r requirements.txt
 python app.py
 ```
 
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Open [http://127.0.0.1:8501](http://127.0.0.1:8501).
 
 Set your output folder in the top bar. Paste your resume LaTeX. You're ready.
+
+If you want AI resume generation, fill in `AI_PROVIDER`, `AI_MODEL`, and `AI_API_KEY` in `.env` or use the in-app settings panel. `.env` and `base_context.txt` are local-only and should stay untracked.
+
+Supported providers:
+
+- `openai`
+- `anthropic`
+- `gemini`
 
 ---
 
@@ -91,6 +106,7 @@ Set your output folder in the top bar. Paste your resume LaTeX. You're ready.
 | Backend | Python + Flask |
 | Compiler | XeLaTeX (MiKTeX) |
 | Editor | CodeMirror 5 -- LaTeX syntax, dracula theme |
+| AI | OpenAI, Anthropic, Gemini |
 | UI Font | Source Sans Pro |
 | Preview | Browser-native PDF viewer |
 
@@ -101,9 +117,11 @@ Set your output folder in the top bar. Paste your resume LaTeX. You're ready.
 ```
 folio/
 ├── app.py              # Flask backend
+├── .env.example        # Safe sample AI config
 ├── requirements.txt
 ├── templates/
 │   └── index.html      # Everything -- editor, preview, UI
+├── base_context.txt    # Local resume context (gitignored)
 └── compiled_pdfs/      # Internal serving cache (gitignored)
 ```
 

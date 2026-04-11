@@ -5,8 +5,14 @@ import subprocess
 import tempfile
 from pathlib import Path
 from flask import Flask, request, jsonify, render_template, send_file, abort
+from dotenv import load_dotenv, set_key
+
+load_dotenv()
 
 app = Flask(__name__)
+
+ENV_PATH     = str(Path(__file__).parent / '.env')
+CONTEXT_PATH = str(Path(__file__).parent / 'base_context.txt')
 
 SERVE_DIR = Path(__file__).parent / "compiled_pdfs"
 SERVE_DIR.mkdir(exist_ok=True)
@@ -194,6 +200,137 @@ def serve_pdf(filename):
     return send_file(str(path), mimetype="application/pdf")
 
 
+@app.route("/config", methods=["GET"])
+def get_config():
+    provider    = os.environ.get('AI_PROVIDER', '')
+    model       = os.environ.get('AI_MODEL', '')
+    api_key     = os.environ.get('AI_API_KEY', '')
+    base_context = ''
+    if os.path.exists(CONTEXT_PATH):
+        with open(CONTEXT_PATH, 'r', encoding='utf-8') as f:
+            base_context = f.read()
+    key_preview = f"...{api_key[-4:]}" if len(api_key) >= 4 else ''
+    return jsonify(
+        provider=provider,
+        model=model,
+        key_set=bool(api_key),
+        key_preview=key_preview,
+        base_context=base_context,
+    )
+
+
+@app.route("/config", methods=["POST"])
+def save_config():
+    data         = request.get_json(force=True)
+    provider     = (data.get('provider') or '').strip()
+    api_key      = (data.get('api_key') or '').strip()
+    model        = (data.get('model') or '').strip()
+    base_context = data.get('base_context', '')
+
+    if not provider or not model:
+        return jsonify(success=False, error="Provider and model are required.")
+
+    set_key(ENV_PATH, 'AI_PROVIDER', provider)
+    set_key(ENV_PATH, 'AI_MODEL', model)
+    os.environ['AI_PROVIDER'] = provider
+    os.environ['AI_MODEL']    = model
+
+    if api_key:
+        set_key(ENV_PATH, 'AI_API_KEY', api_key)
+        os.environ['AI_API_KEY'] = api_key
+
+    with open(CONTEXT_PATH, 'w', encoding='utf-8') as f:
+        f.write(base_context)
+
+    return jsonify(success=True)
+
+
+@app.route("/generate", methods=["POST"])
+def generate_resume():
+    data = request.get_json(force=True)
+    jd   = (data.get('jd') or '').strip()
+
+    if not jd:
+        return jsonify(success=False, error="Job description is required.")
+
+    provider = os.environ.get('AI_PROVIDER', '')
+    api_key  = os.environ.get('AI_API_KEY', '')
+    model    = os.environ.get('AI_MODEL', '')
+
+    if not provider or not api_key or not model:
+        return jsonify(success=False, error="AI not configured. Click ⚙ Settings to set up.")
+
+    base_context = ''
+    if os.path.exists(CONTEXT_PATH):
+        with open(CONTEXT_PATH, 'r', encoding='utf-8') as f:
+            base_context = f.read()
+
+    system_prompt = (
+        "You are an expert resume writer and LaTeX specialist.\n"
+        "Generate a complete, professional LaTeX resume tailored to the provided job description.\n\n"
+        "Use the following resume context as the foundation for the candidate's background:\n"
+        + base_context +
+        "\n\nRules:\n"
+        "1. Output ONLY valid LaTeX code — no explanations, no markdown, no code fences.\n"
+        "2. Keep ALL the candidate's real experience, projects, and skills from the context.\n"
+        "3. Tailor bullet points and emphasis to match the job description keywords.\n"
+        "4. Use a clean, ATS-friendly LaTeX format.\n"
+        "5. The output must start with \\documentclass and end with \\end{document}."
+    )
+    user_prompt = f"Generate a tailored LaTeX resume for this job description:\n\n{jd}"
+
+    try:
+        if provider == 'anthropic':
+            import anthropic as _anthropic
+            client = _anthropic.Anthropic(api_key=api_key)
+            msg    = client.messages.create(
+                model=model, max_tokens=4096,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}],
+            )
+            latex = msg.content[0].text
+
+        elif provider == 'openai':
+            from openai import OpenAI
+            client = OpenAI(api_key=api_key)
+            resp   = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user",   "content": user_prompt},
+                ],
+            )
+            latex = resp.choices[0].message.content
+
+        elif provider == 'gemini':
+            from google import genai
+            from google.genai import types
+            client = genai.Client(api_key=api_key)
+            resp   = client.models.generate_content(
+                model=model,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    max_output_tokens=4096,
+                ),
+            )
+            latex = resp.text
+
+        else:
+            return jsonify(success=False, error=f"Unknown provider: {provider}")
+
+        # Strip markdown code fences in case the model wraps output
+        latex = latex.strip()
+        if latex.startswith('```'):
+            latex = re.sub(r'^```[^\n]*\n', '', latex)
+            latex = re.sub(r'\n```\s*$', '', latex)
+
+        return jsonify(success=True, latex=latex)
+
+    except Exception as e:
+        return jsonify(success=False, error=str(e))
+
+
 if __name__ == "__main__":
-    print("\n  LaTeX Compiler running at http://127.0.0.1:5000\n")
-    app.run(debug=True, host="127.0.0.1", port=5000, use_reloader=False)
+    print("\n  LaTeX Compiler running at http://127.0.0.1:8501\n")
+    app.run(debug=True, host="127.0.0.1", port=8501, use_reloader=False)

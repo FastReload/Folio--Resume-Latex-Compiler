@@ -49,6 +49,11 @@
       overflow: hidden;
     }
 
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
     /* ── TOP BAR ─────────────────────────────────────────── */
     #topbar {
       display: flex;
@@ -161,17 +166,19 @@
       white-space: nowrap;
       flex-shrink: 0;
     }
-    #download-btn:hover:not(.disabled) { background: rgba(90,172,90,0.12); }
-    #download-btn.disabled {
+    #download-btn:hover:not(:disabled) { background: rgba(90,172,90,0.12); }
+    #download-btn:disabled {
       opacity: 0.35;
       cursor: not-allowed;
+      pointer-events: none;
     }
     #download-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
 
     /* ── MAIN SPLIT ──────────────────────────────────────── */
     #main {
       display: flex;
-      height: calc(100vh - var(--topbar-h));
+      flex: 1;
+      min-height: 0;
       overflow: hidden;
     }
 
@@ -394,6 +401,237 @@
       animation: spin 0.7s linear infinite;
     }
 
+    /* ── GENERATE + SETTINGS BUTTONS ───────────────────── */
+    #generate-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 15px;
+      background: transparent;
+      color: #b39ddb;
+      border: 1.5px solid #7e57c2;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #generate-btn:hover, #generate-btn.active {
+      background: rgba(126,87,194,0.18);
+      color: #ce93d8;
+    }
+
+    #settings-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.15s, color 0.15s;
+      flex-shrink: 0;
+    }
+    #settings-btn:hover { background: rgba(255,255,255,0.07); color: var(--text); }
+
+    /* ── GENERATE PANEL ─────────────────────────────────── */
+    #generate-panel {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease, padding 0.25s ease;
+      background: #1e1a2e;
+      border-bottom: 1px solid #4a3a6a;
+      flex-shrink: 0;
+    }
+    #generate-panel.open {
+      max-height: 260px;
+    }
+
+    .gen-inner {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 12px 16px;
+    }
+
+    #jd-input {
+      flex: 1;
+      height: 120px;
+      padding: 9px 12px;
+      background: #12101e;
+      border: 1px solid #4a3a6a;
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #jd-input:focus { border-color: #7e57c2; }
+    #jd-input::placeholder { color: #554a6e; }
+
+    .gen-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    #gen-submit-btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      background: #7e57c2;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+      white-space: nowrap;
+    }
+    #gen-submit-btn:hover:not(:disabled) { background: #6a42b0; }
+    #gen-submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    #gen-close-btn {
+      align-self: flex-start;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px 6px;
+      transition: color 0.15s;
+    }
+    #gen-close-btn:hover { color: var(--text); }
+
+    #gen-status {
+      font-size: 12px;
+      padding: 4px 0;
+    }
+    #gen-status.success { color: #7ec87e; }
+    #gen-status.error   { color: #e06c75; }
+
+    /* ── SETTINGS MODAL ──────────────────────────────────── */
+    #settings-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #settings-overlay.visible { display: flex; }
+
+    #settings-box {
+      background: var(--bg-modal);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 28px 32px;
+      width: 500px;
+      max-width: 92vw;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    #settings-box h2 {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #fff;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .settings-field {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .settings-field label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    .settings-field select,
+    .settings-field input[type="password"],
+    .settings-field input[type="text"] {
+      padding: 8px 10px;
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .settings-field select:focus,
+    .settings-field input:focus { border-color: #7e57c2; }
+    .settings-field select option { background: #1e1e1e; }
+
+    #settings-context {
+      width: 100%;
+      height: 130px;
+      padding: 9px 12px;
+      background: #1e1e1e;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      line-height: 1.5;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 18px;
+    }
+    #settings-context:focus { border-color: #7e57c2; }
+    #settings-context::placeholder { color: var(--text-dim); }
+
+    .settings-context-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    #settings-save {
+      padding: 9px 24px;
+      background: #7e57c2;
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+    #settings-save:hover:not(:disabled) { background: #6a42b0; }
+    #settings-save:disabled { opacity: 0.6; cursor: not-allowed; }
+
     /* ── SCROLLBAR STYLE ─────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -425,6 +663,12 @@
 
   <div class="spacer"></div>
 
+  <button id="generate-btn" title="Generate resume from job description">
+    ⚡ Generate
+  </button>
+
+  <button id="settings-btn" title="AI settings">⚙</button>
+
   <button id="run-btn" title="Compile and preview (Ctrl+Enter)">
     <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
       <path d="M3 2l11 6-11 6V2z"/>
@@ -432,12 +676,24 @@
     Preview
   </button>
 
-  <button id="download-btn" class="disabled" title="Save PDF to output folder">
+  <button id="download-btn" disabled title="Compile a preview first, then download">
     <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
       <path d="M8 1v8.586L5.707 7.293 4.293 8.707 8 12.414l3.707-3.707-1.414-1.414L8 9.586V1H8zM2 14h12v1H2z"/>
     </svg>
     Download
   </button>
+</div>
+
+<!-- ── GENERATE PANEL ────────────────────────────────────────── -->
+<div id="generate-panel">
+  <div class="gen-inner">
+    <textarea id="jd-input" placeholder="Paste the job description here… (Ctrl+Enter to generate)"></textarea>
+    <div class="gen-controls">
+      <button id="gen-submit-btn">⚡ Generate LaTeX</button>
+      <span id="gen-status"></span>
+    </div>
+    <button id="gen-close-btn" title="Close">✕</button>
+  </div>
 </div>
 
 <!-- ── MAIN SPLIT ─────────────────────────────────────────── -->
@@ -501,6 +757,46 @@
   </div>
 </div>
 
+<!-- ── SETTINGS MODAL ─────────────────────────────────────── -->
+<div id="settings-overlay">
+  <div id="settings-box">
+    <h2>⚙ AI Settings</h2>
+
+    <div class="settings-row">
+      <div class="settings-field">
+        <label>Provider</label>
+        <select id="settings-provider">
+          <option value="anthropic">Claude (Anthropic)</option>
+          <option value="openai">OpenAI</option>
+          <option value="gemini">Gemini (Google)</option>
+        </select>
+      </div>
+      <div class="settings-field">
+        <label>Model</label>
+        <select id="settings-model"></select>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <div class="settings-field">
+        <label>API Key</label>
+        <input type="password" id="settings-key" placeholder="Paste your API key here" autocomplete="off">
+      </div>
+    </div>
+
+    <div class="settings-context-label">Base Resume Context</div>
+    <textarea
+      id="settings-context"
+      placeholder="Paste your background here — work history, projects, skills, education, etc. The AI uses this for every generation."
+    ></textarea>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" id="settings-close">Cancel</button>
+      <button id="settings-save">Save Settings</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── STARTER LATEX ──────────────────────────────────────────
   const STARTER = `\\documentclass[12pt]{article}
@@ -540,8 +836,8 @@ Here is the famous Euler identity:
     matchBrackets: true,
     autoCloseBrackets: true,
     extraKeys: {
-      'Ctrl-Enter': () => openModal(),
-      'Cmd-Enter':  () => openModal(),
+      'Ctrl-Enter': () => startPreview(),
+      'Cmd-Enter':  () => startPreview(),
     }
   });
 
@@ -629,7 +925,7 @@ Here is the famous Euler identity:
       if (data.success && data.pdf_url) {
         showPdf(data.pdf_url);
         hasPreview = true;
-        document.getElementById('download-btn').classList.remove('disabled');
+        document.getElementById('download-btn').disabled = false;
       }
     } catch (err) {
       updateLog(`Network error: ${err.message}`, false);
@@ -642,7 +938,7 @@ Here is the famous Euler identity:
     const code      = editor.getValue();
     const filename  = filenameInput.value.trim() || 'output';
     const outputDir = dirInput.value.trim();
-    const compiler  = document.getElementById('compiler-select').value;
+    const compiler  = 'xelatex';
 
     closeModal();
     setCompiling(true);
@@ -661,7 +957,7 @@ Here is the famous Euler identity:
       if (data.success && data.pdf_url) {
         showPdf(data.pdf_url);
         hasPreview = true;
-        document.getElementById('download-btn').classList.remove('disabled');
+        document.getElementById('download-btn').disabled = false;
       }
     } catch (err) {
       updateLog(`Network error: ${err.message}`, false);
@@ -701,6 +997,173 @@ Here is the famous Euler identity:
     placeholder.style.display = 'none';
     frame.style.display = 'block';
   }
+
+  // ── AI SETTINGS ─────────────────────────────────────────────
+
+  const MODELS = {
+    anthropic: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
+    openai:    ['gpt-5.4'],
+    gemini:    ['gemini-3.1-flash-preview', 'gemini-2.5-pro', 'gemini-2.5-flash'],
+  };
+
+  function updateModelOptions(provider, selectedModel) {
+    const sel = document.getElementById('settings-model');
+    sel.innerHTML = '';
+    (MODELS[provider] || []).forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m;
+      opt.textContent = m;
+      if (m === selectedModel) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  async function loadConfig() {
+    try {
+      const res = await fetch('/config');
+      const cfg = await res.json();
+      if (cfg.provider) {
+        document.getElementById('settings-provider').value = cfg.provider;
+        updateModelOptions(cfg.provider, cfg.model);
+      } else {
+        updateModelOptions('anthropic', '');
+      }
+      if (cfg.key_set) {
+        document.getElementById('settings-key').placeholder = `Saved (${cfg.key_preview}) — paste to update`;
+      }
+      if (cfg.base_context) {
+        document.getElementById('settings-context').value = cfg.base_context;
+      }
+    } catch (e) {
+      updateModelOptions('anthropic', '');
+    }
+  }
+
+  document.getElementById('settings-provider').addEventListener('change', (e) => {
+    updateModelOptions(e.target.value, '');
+  });
+
+  document.getElementById('settings-btn').addEventListener('click', () => {
+    document.getElementById('settings-overlay').classList.add('visible');
+  });
+
+  document.getElementById('settings-close').addEventListener('click', () => {
+    document.getElementById('settings-overlay').classList.remove('visible');
+  });
+
+  document.getElementById('settings-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('settings-overlay')) {
+      document.getElementById('settings-overlay').classList.remove('visible');
+    }
+  });
+
+  document.getElementById('settings-save').addEventListener('click', async () => {
+    const provider     = document.getElementById('settings-provider').value;
+    const api_key      = document.getElementById('settings-key').value.trim();
+    const model        = document.getElementById('settings-model').value;
+    const base_context = document.getElementById('settings-context').value;
+
+    const btn = document.getElementById('settings-save');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res  = await fetch('/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider, api_key, model, base_context }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        btn.textContent = 'Saved!';
+        if (api_key) {
+          document.getElementById('settings-key').value = '';
+          document.getElementById('settings-key').placeholder =
+            `Saved (...${api_key.slice(-4)}) — paste to update`;
+        }
+        setTimeout(() => {
+          btn.textContent = 'Save Settings';
+          btn.disabled = false;
+          document.getElementById('settings-overlay').classList.remove('visible');
+        }, 900);
+      } else {
+        btn.textContent = data.error || 'Error';
+        setTimeout(() => { btn.textContent = 'Save Settings'; btn.disabled = false; }, 2000);
+      }
+    } catch (e) {
+      btn.textContent = 'Network error';
+      setTimeout(() => { btn.textContent = 'Save Settings'; btn.disabled = false; }, 2000);
+    }
+  });
+
+  // ── GENERATE PANEL ──────────────────────────────────────────
+
+  document.getElementById('generate-btn').addEventListener('click', () => {
+    const panel  = document.getElementById('generate-panel');
+    const isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open', !isOpen);
+    document.getElementById('generate-btn').classList.toggle('active', !isOpen);
+    if (!isOpen) document.getElementById('jd-input').focus();
+  });
+
+  document.getElementById('gen-close-btn').addEventListener('click', () => {
+    document.getElementById('generate-panel').classList.remove('open');
+    document.getElementById('generate-btn').classList.remove('active');
+  });
+
+  document.getElementById('jd-input').addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); runGenerate(); }
+  });
+
+  document.getElementById('gen-submit-btn').addEventListener('click', runGenerate);
+
+  async function runGenerate() {
+    const jd = document.getElementById('jd-input').value.trim();
+    if (!jd) {
+      const ta = document.getElementById('jd-input');
+      ta.style.borderColor = '#e06c75';
+      setTimeout(() => { ta.style.borderColor = ''; }, 1500);
+      return;
+    }
+
+    const btn    = document.getElementById('gen-submit-btn');
+    const status = document.getElementById('gen-status');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generating…';
+    status.textContent = '';
+    status.className   = 'gen-status';
+
+    try {
+      const res  = await fetch('/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jd }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        editor.setValue(data.latex);
+        status.textContent = '✓ Done! Review the LaTeX, then Ctrl+Enter to compile.';
+        status.className   = 'gen-status success';
+        setTimeout(() => {
+          document.getElementById('generate-panel').classList.remove('open');
+          document.getElementById('generate-btn').classList.remove('active');
+        }, 2000);
+      } else {
+        status.textContent = data.error || 'Unknown error';
+        status.className   = 'gen-status error';
+      }
+    } catch (e) {
+      status.textContent = 'Network error: ' + e.message;
+      status.className   = 'gen-status error';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '⚡ Generate LaTeX';
+    }
+  }
+
+  loadConfig();
 </script>
 </body>
 </html>

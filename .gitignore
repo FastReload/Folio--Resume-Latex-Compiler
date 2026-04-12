@@ -8,3 +8,4 @@ __pycache__/
 *.pdf
 base_context.txt
 .claude/
+.venv
